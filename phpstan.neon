@@ -1,0 +1,12 @@
+parameters:
+    parallel:
+        processTimeout: 3600.0
+        maximumNumberOfProcesses: 1
+    level: 9
+    paths:
+        - src
+    bootstrapFiles:
+        - vendor/autoload.php
+    tmpDir: ./var/.phpstan
+    excludePaths:
+        - './tests'

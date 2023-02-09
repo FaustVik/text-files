@@ -1,0 +1,53 @@
+{
+  "name": "faustvik/text-files",
+  "description": "Library for working with text files and directory",
+  "keywords": [
+    "php",
+    "file",
+    "files",
+    "csv",
+    "csv file",
+    "txt",
+    "text",
+    "read text",
+    "directory"
+  ],
+  "type": "library",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Victor",
+      "email": "victor.faust.dev@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*",
+    "ext-posix": "*"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^1.9",
+    "phpunit/phpunit": "^9",
+    "squizlabs/php_codesniffer": "^3.11"
+  },
+  "autoload": {
+    "psr-4": {
+      "FaustVik\\Files\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "FaustVik\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "scripts": {
+    "cs-check": "./vendor/bin/phpcs src/",
+    "cs-fix": " ./vendor/bin/phpcbf src/",
+    "phpstan-check": "./vendor/bin/phpstan analyse",
+    "unit-tests-run": "./vendor/bin/phpunit --bootstrap vendor/autoload.php tests"
+  }
+}

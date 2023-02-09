@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<ruleset name="TextFile Custom Coding Standard">
+    <description>Custom rules</description>
+
+    <!-- Указываем путь к кешу -->
+    <cache>./var/.phpcs-cache</cache>
+
+    <!-- Используем стандарт PSR-12 -->
+    <rule ref="PSR12"/>
+
+    <!-- Убедимся, что файл заканчивается пустой строкой -->
+    <rule ref="PSR2.Files.EndFileNewline"/>
+
+    <!-- Убедимся, что нет лишних пробелов между методами и закрывающей скобкой класса -->
+    <rule ref="PSR2.Classes.ClassDeclaration"/>
+
+    <rule ref="Generic.Formatting.SpaceAfterCast"/>
+
+    <!-- Настраиваем отступы между методами -->
+    <rule ref="Squiz.WhiteSpace.FunctionSpacing">
+        <properties>
+            <property name="spacing" value="1"/> <!-- Одна пустая строка между методами -->
+            <property name="spacingBeforeFirst" value="0"/> <!-- Нет пустой строки перед первым методом -->
+            <property name="spacingAfterLast" value="0"/> <!-- Нет пустой строки после последнего метода -->
+        </properties>
+    </rule>
+
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="140"/>
+            <property name="absoluteLineLimit" value="140"/>
+        </properties>
+    </rule>
+
+    <!-- Игнорируем определенные файлы или директории -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+
+    <!-- Указываем директории для проверки -->
+    <file>./src</file>
+    <file>./tests</file>
+</ruleset>
