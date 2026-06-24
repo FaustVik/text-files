@@ -76,9 +76,13 @@ final class CsvSettingReader implements CsvSettingReaderContract
 
     public function formatCsvLine(array $fields): string
     {
-        return implode($this->getSeparator(), array_map(function (mixed $value) {
+        $separator = $this->getSeparator();
+        $enclosure = $this->getEnclosureChar();
+        $escape = $this->getEscapeChar();
+
+        return implode($separator, array_map(function (mixed $value) use ($separator, $enclosure, $escape) {
             if (is_array($value)) {
-                $value = implode($this->getSeparator(), $value);
+                $value = implode($separator, $value);
             } elseif (is_bool($value)) {
                 $value = $value ? 'true' : 'false';
             } elseif (is_null($value)) {
@@ -87,7 +91,11 @@ final class CsvSettingReader implements CsvSettingReaderContract
                 $value = (string) $value;
             }
 
-            return str_replace(search: '"', replace: '""', subject: $value);
+            if ($enclosure !== '' && str_contains($value, $separator) && $escape !== '') {
+                $value = $enclosure . str_replace($enclosure, $enclosure . $enclosure, $value) . $enclosure;
+            }
+
+            return $value;
         }, $fields));
     }
 }
