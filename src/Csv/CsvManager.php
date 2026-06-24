@@ -461,4 +461,78 @@ final class CsvManager implements CsvContract
             $this->fileOperation->closeFile($handle);
         }
     }
+
+    /**
+     * Filter rows where the value at $columnIndex equals $value.
+     * Returns matching rows with their original keys.
+     *
+     * @param int<0, max> $columnIndex
+     * @return array<int, array<int|string, int|string|float>>
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function filterByColumn(int $columnIndex, string $value): array
+    {
+        return $this->filter(
+            static function (array $row) use ($columnIndex, $value): bool {
+                return isset($row[$columnIndex]) && (string) $row[$columnIndex] === $value;
+            },
+        );
+    }
+
+    /**
+     * Filter rows using an arbitrary callback.
+     * Returns matching rows with their original keys.
+     *
+     * @param callable(array<int|string, int|string|float>): bool $filterFn Return true to keep the row.
+     * @return array<int, array<int|string, int|string|float>>
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function filter(callable $filterFn): array
+    {
+        $data = $this->readData();
+
+        if ($data === []) {
+            return [];
+        }
+
+        return array_filter($data, $filterFn);
+    }
+
+    /**
+     * Search for rows containing $query.
+     * If $columnIndex is provided, searches only that column.
+     * Otherwise searches all columns.
+     * Case-insensitive match.
+     *
+     * @param int<0, max>|null $columnIndex
+     * @return array<int, array<int|string, int|string|float>>
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function search(string $query, ?int $columnIndex = null): array
+    {
+        $lowerQuery = strtolower($query);
+
+        if ($columnIndex !== null) {
+            return $this->filter(
+                static function (array $row) use ($columnIndex, $lowerQuery): bool {
+                    return isset($row[$columnIndex])
+                        && str_contains(strtolower((string) $row[$columnIndex]), $lowerQuery);
+                },
+            );
+        }
+
+        return $this->filter(
+            static function (array $row) use ($lowerQuery): bool {
+                foreach ($row as $cell) {
+                    if (str_contains(strtolower((string) $cell), $lowerQuery)) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+        );
+    }
 }

@@ -280,4 +280,84 @@ final class CsvManagerTest extends BaseTestCase
 
         $this->assertCount(1, $rows);
     }
+
+    public function testFilterByColumn(): void
+    {
+        $path = $this->createTempFile('filter_col.csv', "id,name,age\n1,Alice,30\n2,Bob,25\n3,Charlie,30\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->filterByColumn(2, '30');
+
+        $this->assertCount(2, $result);
+        $values = array_values($result);
+        $this->assertEquals(['1', 'Alice', '30'], $values[0]);
+        $this->assertEquals(['3', 'Charlie', '30'], $values[1]);
+    }
+
+    public function testFilterByColumnNoMatch(): void
+    {
+        $path = $this->createTempFile('filter_nomatch.csv', "id,name\n1,Alice\n2,Bob\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->filterByColumn(1, 'Nobody');
+
+        $this->assertCount(0, $result);
+    }
+
+    public function testFilter(): void
+    {
+        $path = $this->createTempFile('filter.csv', "id,name,age\n1,Alice,30\n2,Bob,25\n3,Charlie,35\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->filter(fn(array $row): bool => (int) $row[2] > 28);
+
+        $this->assertCount(2, $result);
+        $values = array_values($result);
+        $this->assertEquals(['1', 'Alice', '30'], $values[0]);
+        $this->assertEquals(['3', 'Charlie', '35'], $values[1]);
+    }
+
+    public function testSearch(): void
+    {
+        $path = $this->createTempFile('search.csv', "id,name,city\n1,Alice,New York\n2,Bob,Boston\n3,Charlie,New Orleans\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->search('New');
+
+        $this->assertCount(2, $result);
+        $values = array_values($result);
+        $this->assertEquals(['1', 'Alice', 'New York'], $values[0]);
+        $this->assertEquals(['3', 'Charlie', 'New Orleans'], $values[1]);
+    }
+
+    public function testSearchSpecificColumn(): void
+    {
+        $path = $this->createTempFile('search_col.csv', "id,name,city\n1,Alice,New York\n2,Bob,Boston\n3,Charlie,New Orleans\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->search('New', columnIndex: 2);
+
+        $this->assertCount(2, $result);
+    }
+
+    public function testSearchCaseInsensitive(): void
+    {
+        $path = $this->createTempFile('search_case.csv', "id,name\n1,alice\n2,BOB\n3,Charlie\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->search('alice');
+
+        $this->assertCount(1, $result);
+        $this->assertEquals(['1', 'alice'], $result[0]);
+    }
+
+    public function testSearchNoMatch(): void
+    {
+        $path = $this->createTempFile('search_none.csv', "id,name\n1,Alice\n2,Bob\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $result = $manager->search('NonExistent');
+
+        $this->assertCount(0, $result);
+    }
 }
