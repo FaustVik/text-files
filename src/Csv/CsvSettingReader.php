@@ -18,7 +18,6 @@ final class CsvSettingReader implements CsvSettingReaderContract
      * @param string $separator the separator character used in the CSV file
      * @param bool $skipFirstLine flag indicating whether to skip the first line when reading
      * @param bool $useAssociationForHeader flag indicating whether to use associations for header keys
-     * @param string $encoding the encoding type used for reading/writing the CSV file
      * @param string $escapeChar the escape character used in the CSV file
      * @param string $enclosureChar the enclosure character used in the CSV file
      */
@@ -26,7 +25,6 @@ final class CsvSettingReader implements CsvSettingReaderContract
         private readonly string $separator = ',',
         private readonly bool $skipFirstLine = false,
         private readonly bool $useAssociationForHeader = false,
-        private readonly string $encoding = 'UTF-8',
         private readonly string $escapeChar = '\\',
         private readonly string $enclosureChar = '"',
     ) {
@@ -59,11 +57,6 @@ final class CsvSettingReader implements CsvSettingReaderContract
         return $this->associationsIndexKeys;
     }
 
-    public function getEncoding(): string
-    {
-        return $this->encoding;
-    }
-
     public function getEscapeChar(): string
     {
         return $this->escapeChar;
@@ -76,9 +69,13 @@ final class CsvSettingReader implements CsvSettingReaderContract
 
     public function formatCsvLine(array $fields): string
     {
-        return implode($this->getSeparator(), array_map(function (mixed $value) {
+        $separator = $this->getSeparator();
+        $enclosure = $this->getEnclosureChar();
+        $escape = $this->getEscapeChar();
+
+        return implode($separator, array_map(function (mixed $value) use ($separator, $enclosure, $escape) {
             if (is_array($value)) {
-                $value = implode($this->getSeparator(), $value);
+                $value = implode($separator, $value);
             } elseif (is_bool($value)) {
                 $value = $value ? 'true' : 'false';
             } elseif (is_null($value)) {
@@ -87,7 +84,11 @@ final class CsvSettingReader implements CsvSettingReaderContract
                 $value = (string) $value;
             }
 
-            return str_replace(search: '"', replace: '""', subject: $value);
+            if ($enclosure !== '' && str_contains($value, $separator) && $escape !== '') {
+                $value = $enclosure . str_replace($enclosure, $enclosure . $enclosure, $value) . $enclosure;
+            }
+
+            return $value;
         }, $fields));
     }
 }

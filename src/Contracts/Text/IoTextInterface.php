@@ -46,4 +46,14 @@ interface IoTextInterface
      * @param array<int|string, int|string|bool|float>|string $text
      */
     public function appendToStartFile(array|string $text): bool;
+
+    /**
+     * Iterate over file lines using a generator.
+     * Keeps the file handle open only for the duration of iteration,
+     * making it memory-efficient for large files.
+     *
+     * @param null|int<1,max> $length The maximum length of a line to read.
+     * @return \Generator<int, string>
+     */
+    public function lines(?int $length = null): \Generator;
 }

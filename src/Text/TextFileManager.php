@@ -12,6 +12,8 @@ use FaustVik\Files\Dictionary\FileModes;
 use FaustVik\Files\Exceptions\File\CantReadFileException;
 use FaustVik\Files\Exceptions\FileBaseException;
 use FaustVik\Files\Exceptions\IsNotResourceException;
+use FaustVik\Files\File\File;
+use FaustVik\Files\File\FileOperationWrapper;
 
 final class TextFileManager implements IoTextInterface
 {
@@ -21,6 +23,21 @@ final class TextFileManager implements IoTextInterface
         private readonly FileOperationsInterface $fileOperation,
     ) {
         $this->file->checkFile();
+    }
+
+    /**
+     * Create an instance from a file path with default settings.
+     *
+     * @param string $path Path to the text file.
+     * @param bool $skipEmptyLines Whether to skip empty lines when reading.
+     */
+    public static function fromPath(string $path, bool $skipEmptyLines = false): self
+    {
+        return new self(
+            file: new File($path),
+            settings: new TextSettingReader(isSkipEmptyLine: $skipEmptyLines),
+            fileOperation: new FileOperationWrapper(),
+        );
     }
 
     /**
@@ -69,23 +86,27 @@ final class TextFileManager implements IoTextInterface
     public function readToString(int $offset = 0, ?int $length = null): string
     {
         /** @var string $content */
-        $content = $this->withFileHandle(mode: FileModes::ONLY_READ_BINARY, callback: static function ($handle) use ($length) {
-            $result = '';
-
-            while (($buffer = fgets(stream: $handle, length: $length)) !== false) {
-                $result .= $buffer;
+        $content = $this->withFileHandle(mode: FileModes::ONLY_READ_BINARY, callback: static function ($handle) use ($offset, $length) {
+            if ($offset > 0) {
+                fseek($handle, $offset);
             }
 
-            if (!feof(stream: $handle)) {
-                throw new CantReadFileException();
+            if ($length !== null) {
+                $content = fread($handle, $length);
+                if ($content === false) {
+                    throw new CantReadFileException();
+                }
+
+                return $content;
+            }
+
+            $result = '';
+            while (($buffer = fread($handle, 8192)) !== false && $buffer !== '') {
+                $result .= $buffer;
             }
 
             return $result;
         });
-
-        if ($offset > 0) {
-            $content = substr(string: $content, offset: $offset, length: $length);
-        }
 
         return $content;
     }
@@ -140,6 +161,29 @@ final class TextFileManager implements IoTextInterface
         /** @var false|int $result */
         $result = $this->withFileHandle(mode: $mode, callback: static fn($handle) => fwrite(stream: $handle, data: $data) !== false);
         return !($result === false);
+    }
+
+    /**
+     * @return \Generator<int, string>
+     * @throws IsNotResourceException
+     * @throws FileBaseException
+     */
+    public function lines(?int $length = null): \Generator
+    {
+        $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
+
+        try {
+            $i = 0;
+            while (($line = fgets(stream: $handle, length: $length)) !== false) {
+                if ($this->settings->isSkipEmptyLine() && $line === "\n") {
+                    continue;
+                }
+                yield $i => $line;
+                $i++;
+            }
+        } finally {
+            $this->fileOperation->closeFile(handle: $handle);
+        }
     }
 
     /**

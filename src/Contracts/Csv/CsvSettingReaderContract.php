@@ -47,13 +47,6 @@ interface CsvSettingReaderContract
     public function getAssociationsIndexKeys(): array;
 
     /**
-     * Get the encoding used for reading/writing the CSV file.
-     *
-     * @return string The encoding type (e.g., 'UTF-8', 'ISO-8859-1').
-     */
-    public function getEncoding(): string;
-
-    /**
      * Get the enclosure character used in the CSV file.
      *
      * @return string The enclosure character (default: '"').

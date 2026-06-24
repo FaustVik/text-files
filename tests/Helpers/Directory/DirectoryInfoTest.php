@@ -6,32 +6,22 @@ namespace FaustVik\Tests\Helpers\Directory;
 
 use FaustVik\Files\Exceptions\DirectoryExceptionBase;
 use FaustVik\Files\Helpers\Directory\DirectoryInfo;
-use FaustVik\Files\Helpers\Directory\DirectoryOperation;
-use PHPUnit\Framework\TestCase;
+use FaustVik\Tests\BaseTestCase;
 
-final class DirectoryInfoTest extends TestCase
+final class DirectoryInfoTest extends BaseTestCase
 {
     private string $testDir;
 
     protected function setUp(): void
     {
-        // Создаем временную директорию для тестов
-        $this->testDir = __DIR__ . '/test_dir';
-        if (!file_exists(filename: $this->testDir)) {
-            mkdir(directory: $this->testDir);
-        }
+        $this->testDir = $this->createTempDir('dir_info');
 
-        // Создаем несколько файлов и поддиректорий для тестов
-        file_put_contents(filename: $this->testDir . '/file1.txt', data: '');
-        file_put_contents(filename: $this->testDir . '/file2.txt', data: '');
-        if (!is_dir(filename: $this->testDir . '/subdir')) {
-            mkdir(directory: $this->testDir . '/subdir');
-        }
-    }
+        file_put_contents($this->testDir . '/file1.txt', '');
+        file_put_contents($this->testDir . '/file2.txt', '');
 
-    protected function tearDown(): void
-    {
-        DirectoryOperation::deleteDir(path: $this->testDir);
+        if (!is_dir($this->testDir . '/subdir')) {
+            mkdir($this->testDir . '/subdir');
+        }
     }
 
     public function testScan(): void
@@ -40,8 +30,8 @@ final class DirectoryInfoTest extends TestCase
         $this->assertContains('file1.txt', $result);
         $this->assertContains('file2.txt', $result);
         $this->assertContains('subdir', $result);
-        $this->assertContains('.', $result); // Текущая директория
-        $this->assertContains('..', $result); // Родительская директория
+        $this->assertContains('.', $result);
+        $this->assertContains('..', $result);
     }
 
     public function testScanWithNonExistentDirectory(): void
@@ -63,10 +53,7 @@ final class DirectoryInfoTest extends TestCase
     {
         $path = $this->testDir;
 
-        // Первый вызов — кешируем
         $realPath1 = DirectoryInfo::scan(path: $path);
-
-        // Второй вызов — используем кеш
         $realPath2 = DirectoryInfo::scan(path: $path);
 
         $this->assertEquals($realPath1, $realPath2);

@@ -6,25 +6,17 @@ namespace FaustVik\Tests\Helpers\File;
 
 use FaustVik\Files\Exceptions\File\FileNotFoundException;
 use FaustVik\Files\Helpers\File\FileInfo;
-use PHPUnit\Framework\TestCase;
+use FaustVik\Tests\BaseTestCase;
 
-final class FileInfoTest extends TestCase
+final class FileInfoTest extends BaseTestCase
 {
-    private string $testFile = __DIR__ . '/testfile.txt';
-    private string $nonExistentFile = __DIR__ . '/nonexistent.txt';
+    private string $testFile;
+    private string $nonExistentFile;
 
     protected function setUp(): void
     {
-        // Создаем тестовый файл
-        \file_put_contents($this->testFile, 'Hello, world!');
-    }
-
-    protected function tearDown(): void
-    {
-        // Удаляем тестовый файл после каждого теста
-        if (\file_exists($this->testFile)) {
-            \unlink($this->testFile);
-        }
+        $this->testFile = $this->createTempFile('testfile.txt', 'Hello, world!');
+        $this->nonExistentFile = $this->getTempPath('nonexistent.txt');
     }
 
     public function testCheckFileExistence(): void

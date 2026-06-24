@@ -14,6 +14,8 @@ use FaustVik\Files\Helpers\File\FileInfo;
 
 final class CsvFile implements CsvFileContract
 {
+    use \FaustVik\Files\File\FileCheckTrait;
+
     public const TYPE_CSV = 'csv';
 
     public function __construct(
@@ -27,29 +29,15 @@ final class CsvFile implements CsvFileContract
     }
 
     /**
-     * @throws FileIsNotWriteableException
-     * @throws FileNotFoundException
      * @throws FileExtensionIsNotSupportedException
      * @throws FileBaseException
      * @throws FileIsNotReadableException
+     * @throws FileIsNotWriteableException
+     * @throws FileNotFoundException
      */
     public function checkFile(): void
     {
-        if (!FileInfo::checkFileExistence($this->path)) {
-            throw new FileNotFoundException($this->path);
-        }
-
-        if (!FileInfo::isFile($this->path)) {
-            throw new FileBaseException('Is not file');
-        }
-
-        if (!FileInfo::isReadable($this->path)) {
-            throw new FileIsNotReadableException($this->path);
-        }
-
-        if (!FileInfo::isWritable($this->path)) {
-            throw new FileIsNotWriteableException($this->path);
-        }
+        $this->validateFile();
 
         if (!$this->isCsvExtension()) {
             throw new FileExtensionIsNotSupportedException($this->getExtension());

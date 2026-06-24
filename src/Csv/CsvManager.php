@@ -12,6 +12,7 @@ use FaustVik\Files\Dictionary\FileModes;
 use FaustVik\Files\Exceptions\File\FileExtensionIsNotSupportedException;
 use FaustVik\Files\Exceptions\FileBaseException;
 use FaustVik\Files\Exceptions\IsNotResourceException;
+use FaustVik\Files\File\FileOperationWrapper;
 
 final class CsvManager implements CsvContract
 {
@@ -31,6 +32,41 @@ final class CsvManager implements CsvContract
     }
 
     /**
+     * Create an instance from a file path with default settings.
+     *
+     * @param string $path Path to the CSV file.
+     * @param string $separator Column separator character (default: ',').
+     * @param bool $skipFirstLine Whether to skip the first line as header.
+     * @param bool $useAssociationForHeader Whether to use custom key associations.
+     * @param string $escapeChar Escape character (default: '\\').
+     * @param string $enclosureChar Enclosure character (default: '"').
+     */
+    public static function fromPath(
+        string $path,
+        string $separator = ',',
+        bool $skipFirstLine = false,
+        bool $useAssociationForHeader = false,
+        string $escapeChar = '\\',
+        string $enclosureChar = '"',
+    ): self {
+        $csvFile = new CsvFile($path);
+
+        $settings = new CsvSettingReader(
+            separator: $separator,
+            skipFirstLine: $skipFirstLine,
+            useAssociationForHeader: $useAssociationForHeader,
+            escapeChar: $escapeChar,
+            enclosureChar: $enclosureChar,
+        );
+
+        return new self(
+            file: $csvFile,
+            csvSettingReaderContract: $settings,
+            fileOperation: new FileOperationWrapper(),
+        );
+    }
+
+    /**
      * @throws FileBaseException
      * @throws IsNotResourceException
      */
@@ -46,7 +82,7 @@ final class CsvManager implements CsvContract
                 unset($item[$column]);
             }
 
-            return $item;
+            return array_values($item);
         });
     }
 
@@ -120,10 +156,12 @@ final class CsvManager implements CsvContract
             return [];
         }
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $data = $this->readBase(handle: $handle, length: 0, columns: $columns);
-        $this->fileOperation->closeFile($handle);
 
-        return $data;
+        try {
+            return $this->readBase(handle: $handle, length: 0, columns: $columns);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -136,10 +174,14 @@ final class CsvManager implements CsvContract
             return [];
         }
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $data = $this->readBase(handle: $handle, length: 0, lines: $lines);
-        $this->fileOperation->closeFile($handle);
 
-        return array_filter($data, static fn($key) => \in_array($key, $lines, true), ARRAY_FILTER_USE_KEY);
+        try {
+            $data = $this->readBase(handle: $handle, length: 0, lines: $lines);
+
+            return array_filter($data, static fn($key) => \in_array($key, $lines, true), ARRAY_FILTER_USE_KEY);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -150,10 +192,12 @@ final class CsvManager implements CsvContract
     public function write(array $fields): bool
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::WRITE_APPEND_ONLY);
-        $result = $this->baseWrite(handle: $handle, fields: $fields);
-        $this->fileOperation->closeFile($handle);
 
-        return $result;
+        try {
+            return $this->baseWrite(handle: $handle, fields: $fields);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -166,10 +210,14 @@ final class CsvManager implements CsvContract
     public function read(int $length = 0, ?int $line = null): array
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $result = $this->readBase(handle: $handle, length: $length);
-        $this->fileOperation->closeFile($handle);
 
-        return $result;
+        try {
+            $lines = $line !== null ? [$line] : [];
+
+            return $this->readBase(handle: $handle, length: $length, lines: $lines);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -180,10 +228,12 @@ final class CsvManager implements CsvContract
     public function overWrite(array $fields): bool
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::WRITE_TRUNC_ONLY);
-        $result = $this->baseWrite(handle: $handle, fields: $fields);
-        $this->fileOperation->closeFile($handle);
 
-        return $result;
+        try {
+            return $this->baseWrite(handle: $handle, fields: $fields);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -295,10 +345,12 @@ final class CsvManager implements CsvContract
     private function readData(int $length = 0): array
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $data = $this->readBase(handle: $handle, length: $length);
-        $this->fileOperation->closeFile($handle);
 
-        return $data;
+        try {
+            return $this->readBase(handle: $handle, length: $length);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -318,5 +370,169 @@ final class CsvManager implements CsvContract
         }
 
         return $this->overWrite($data);
+    }
+
+    /**
+     * Process CSV in chunks of $size rows.
+     * Each chunk is passed to $callback as array<array>.
+     * Return false from callback to stop processing early.
+     *
+     * @param int<1, max> $size Number of rows per chunk.
+     * @param callable(array<array<int|string, int|string|float>>): ?bool $callback
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function chunk(int $size, callable $callback): void
+    {
+        $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
+
+        try {
+            $isWasSkippedHeader = false;
+            $chunk = [];
+
+            while (
+                ($data = fgetcsv(
+                    stream: $handle,
+                    length: 0,
+                    separator: $this->csvSettingReaderContract->getSeparator(),
+                    enclosure: $this->csvSettingReaderContract->getEnclosureChar(),
+                    escape: $this->csvSettingReaderContract->getEscapeChar(),
+                )) !== false
+            ) {
+                if (!$isWasSkippedHeader && $this->csvSettingReaderContract->isSkipFirstLine()) {
+                    $isWasSkippedHeader = true;
+                    continue;
+                }
+
+                $chunk[] = $this->replaceAssociations($data);
+
+                if (\count($chunk) === $size) {
+                    $result = $callback($chunk);
+                    if ($result === false) {
+                        return;
+                    }
+                    $chunk = [];
+                }
+            }
+
+            if ($chunk !== []) {
+                $callback($chunk);
+            }
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
+    }
+
+    /**
+     * Process CSV row by row using a generator-style callback.
+     * Return false from callback to stop processing early.
+     *
+     * @param callable(array<int|string, int|string|float>): ?bool $callback
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function stream(callable $callback): void
+    {
+        $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
+
+        try {
+            $isWasSkippedHeader = false;
+
+            while (
+                ($data = fgetcsv(
+                    stream: $handle,
+                    length: 0,
+                    separator: $this->csvSettingReaderContract->getSeparator(),
+                    enclosure: $this->csvSettingReaderContract->getEnclosureChar(),
+                    escape: $this->csvSettingReaderContract->getEscapeChar(),
+                )) !== false
+            ) {
+                if (!$isWasSkippedHeader && $this->csvSettingReaderContract->isSkipFirstLine()) {
+                    $isWasSkippedHeader = true;
+                    continue;
+                }
+
+                $result = $callback($this->replaceAssociations($data));
+                if ($result === false) {
+                    return;
+                }
+            }
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
+    }
+
+    /**
+     * Filter rows where the value at $columnIndex equals $value.
+     * Returns matching rows with their original keys.
+     *
+     * @param int<0, max> $columnIndex
+     * @return array<int, array<int|string, int|string|float>>
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function filterByColumn(int $columnIndex, string $value): array
+    {
+        return $this->filter(
+            static function (array $row) use ($columnIndex, $value): bool {
+                return isset($row[$columnIndex]) && (string) $row[$columnIndex] === $value;
+            },
+        );
+    }
+
+    /**
+     * Filter rows using an arbitrary callback.
+     * Returns matching rows with their original keys.
+     *
+     * @param callable(array<int|string, int|string|float>): bool $filterFn Return true to keep the row.
+     * @return array<int, array<int|string, int|string|float>>
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function filter(callable $filterFn): array
+    {
+        $data = $this->readData();
+
+        if ($data === []) {
+            return [];
+        }
+
+        return array_filter($data, $filterFn);
+    }
+
+    /**
+     * Search for rows containing $query.
+     * If $columnIndex is provided, searches only that column.
+     * Otherwise searches all columns.
+     * Case-insensitive match.
+     *
+     * @param int<0, max>|null $columnIndex
+     * @return array<int, array<int|string, int|string|float>>
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function search(string $query, ?int $columnIndex = null): array
+    {
+        $lowerQuery = strtolower($query);
+
+        if ($columnIndex !== null) {
+            return $this->filter(
+                static function (array $row) use ($columnIndex, $lowerQuery): bool {
+                    return isset($row[$columnIndex])
+                        && str_contains(strtolower((string) $row[$columnIndex]), $lowerQuery);
+                },
+            );
+        }
+
+        return $this->filter(
+            static function (array $row) use ($lowerQuery): bool {
+                foreach ($row as $cell) {
+                    if (str_contains(strtolower((string) $cell), $lowerQuery)) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+        );
     }
 }
