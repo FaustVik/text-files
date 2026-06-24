@@ -120,10 +120,12 @@ final class CsvManager implements CsvContract
             return [];
         }
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $data = $this->readBase(handle: $handle, length: 0, columns: $columns);
-        $this->fileOperation->closeFile($handle);
 
-        return $data;
+        try {
+            return $this->readBase(handle: $handle, length: 0, columns: $columns);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -136,10 +138,14 @@ final class CsvManager implements CsvContract
             return [];
         }
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $data = $this->readBase(handle: $handle, length: 0, lines: $lines);
-        $this->fileOperation->closeFile($handle);
 
-        return array_filter($data, static fn($key) => \in_array($key, $lines, true), ARRAY_FILTER_USE_KEY);
+        try {
+            $data = $this->readBase(handle: $handle, length: 0, lines: $lines);
+
+            return array_filter($data, static fn($key) => \in_array($key, $lines, true), ARRAY_FILTER_USE_KEY);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -150,10 +156,12 @@ final class CsvManager implements CsvContract
     public function write(array $fields): bool
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::WRITE_APPEND_ONLY);
-        $result = $this->baseWrite(handle: $handle, fields: $fields);
-        $this->fileOperation->closeFile($handle);
 
-        return $result;
+        try {
+            return $this->baseWrite(handle: $handle, fields: $fields);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -166,10 +174,12 @@ final class CsvManager implements CsvContract
     public function read(int $length = 0, ?int $line = null): array
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $result = $this->readBase(handle: $handle, length: $length);
-        $this->fileOperation->closeFile($handle);
 
-        return $result;
+        try {
+            return $this->readBase(handle: $handle, length: $length);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -180,10 +190,12 @@ final class CsvManager implements CsvContract
     public function overWrite(array $fields): bool
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::WRITE_TRUNC_ONLY);
-        $result = $this->baseWrite(handle: $handle, fields: $fields);
-        $this->fileOperation->closeFile($handle);
 
-        return $result;
+        try {
+            return $this->baseWrite(handle: $handle, fields: $fields);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
@@ -295,10 +307,12 @@ final class CsvManager implements CsvContract
     private function readData(int $length = 0): array
     {
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
-        $data = $this->readBase(handle: $handle, length: $length);
-        $this->fileOperation->closeFile($handle);
 
-        return $data;
+        try {
+            return $this->readBase(handle: $handle, length: $length);
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
     }
 
     /**
