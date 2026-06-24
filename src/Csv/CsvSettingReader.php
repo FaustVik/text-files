@@ -18,7 +18,6 @@ final class CsvSettingReader implements CsvSettingReaderContract
      * @param string $separator the separator character used in the CSV file
      * @param bool $skipFirstLine flag indicating whether to skip the first line when reading
      * @param bool $useAssociationForHeader flag indicating whether to use associations for header keys
-     * @param string $encoding the encoding type used for reading/writing the CSV file
      * @param string $escapeChar the escape character used in the CSV file
      * @param string $enclosureChar the enclosure character used in the CSV file
      */
@@ -26,7 +25,6 @@ final class CsvSettingReader implements CsvSettingReaderContract
         private readonly string $separator = ',',
         private readonly bool $skipFirstLine = false,
         private readonly bool $useAssociationForHeader = false,
-        private readonly string $encoding = 'UTF-8',
         private readonly string $escapeChar = '\\',
         private readonly string $enclosureChar = '"',
     ) {
@@ -57,11 +55,6 @@ final class CsvSettingReader implements CsvSettingReaderContract
     public function getAssociationsIndexKeys(): array
     {
         return $this->associationsIndexKeys;
-    }
-
-    public function getEncoding(): string
-    {
-        return $this->encoding;
     }
 
     public function getEscapeChar(): string

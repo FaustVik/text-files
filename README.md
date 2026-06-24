@@ -48,8 +48,8 @@ $directoryPath = '/path/to/nested/directory';
 DirectoryOperation::creatingNestedDirectories($directoryPath);
 ```
 
-Удаление директории со всеми вложенными файлами и директориями:  
-php
+Удаление директории со всеми вложенными файлами и директориями:
+
 ```php
 use FaustVik\Files\Helpers\Directory\DirectoryOperation;
 $directoryPath = '/path/to/nested/directory';

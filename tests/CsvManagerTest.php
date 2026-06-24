@@ -29,7 +29,6 @@ final class CsvManagerTest extends BaseTestCase
         string $separator = ',',
         bool $skipFirstLine = false,
         bool $useAssociationForHeader = false,
-        string $encoding = 'UTF-8',
         string $escapeChar = '\\',
         string $enclosureChar = '"',
     ): CsvSettingReaderContract {
@@ -37,7 +36,6 @@ final class CsvManagerTest extends BaseTestCase
             separator: $separator,
             skipFirstLine: $skipFirstLine,
             useAssociationForHeader: $useAssociationForHeader,
-            encoding: $encoding,
             escapeChar: $escapeChar,
             enclosureChar: $enclosureChar
         );

@@ -11,6 +11,9 @@ use FaustVik\Files\Exceptions\DirectoryExceptionBase;
  */
 final class DirectoryInfo
 {
+    /** @var array<string, false|string> */
+    private static array $realPathCache = [];
+
     /**
      * Directory scan.
      *
@@ -42,16 +45,22 @@ final class DirectoryInfo
         return $realPath !== false && is_dir(filename: $realPath);
     }
 
+    /**
+     * Clear the real path cache.
+     */
+    public static function clearCache(): void
+    {
+        self::$realPathCache = [];
+    }
+
     private static function getRealPath(string $path): false|string
     {
-        static $realPathCache = [];
-
-        if (isset($realPathCache[$path])) {
-            return $realPathCache[$path];
+        if (isset(self::$realPathCache[$path])) {
+            return self::$realPathCache[$path];
         }
 
         $realPath = realpath(path: $path);
-        $realPathCache[$path] = $realPath;
+        self::$realPathCache[$path] = $realPath;
 
         return $realPath;
     }

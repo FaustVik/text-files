@@ -69,23 +69,27 @@ final class TextFileManager implements IoTextInterface
     public function readToString(int $offset = 0, ?int $length = null): string
     {
         /** @var string $content */
-        $content = $this->withFileHandle(mode: FileModes::ONLY_READ_BINARY, callback: static function ($handle) use ($length) {
-            $result = '';
-
-            while (($buffer = fgets(stream: $handle, length: $length)) !== false) {
-                $result .= $buffer;
+        $content = $this->withFileHandle(mode: FileModes::ONLY_READ_BINARY, callback: static function ($handle) use ($offset, $length) {
+            if ($offset > 0) {
+                fseek($handle, $offset);
             }
 
-            if (!feof(stream: $handle)) {
-                throw new CantReadFileException();
+            if ($length !== null) {
+                $content = fread($handle, $length);
+                if ($content === false) {
+                    throw new CantReadFileException();
+                }
+
+                return $content;
+            }
+
+            $result = '';
+            while (($buffer = fread($handle, 8192)) !== false && $buffer !== '') {
+                $result .= $buffer;
             }
 
             return $result;
         });
-
-        if ($offset > 0) {
-            $content = substr(string: $content, offset: $offset, length: $length);
-        }
 
         return $content;
     }

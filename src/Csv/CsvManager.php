@@ -46,7 +46,7 @@ final class CsvManager implements CsvContract
                 unset($item[$column]);
             }
 
-            return $item;
+            return array_values($item);
         });
     }
 
