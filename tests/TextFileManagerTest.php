@@ -171,4 +171,71 @@ final class TextFileManagerTest extends BaseTestCase
         $result = $reader->readToString();
         $this->assertEquals("new", $result);
     }
+
+    public function testLines(): void
+    {
+        $path = $this->createTempFile('lines_test.txt', "alpha\nbeta\ngamma\n");
+
+        $reader = TextFileManager::fromPath($path);
+        $lines = iterator_to_array($reader->lines());
+
+        $this->assertEquals([
+            0 => "alpha\n",
+            1 => "beta\n",
+            2 => "gamma\n",
+        ], $lines);
+    }
+
+    public function testLinesWithSkipEmpty(): void
+    {
+        $path = $this->createTempFile('lines_skip.txt', "one\n\ntwo\n");
+
+        $reader = TextFileManager::fromPath($path, skipEmptyLines: true);
+        $lines = iterator_to_array($reader->lines());
+
+        $this->assertEquals([
+            0 => "one\n",
+            1 => "two\n",
+        ], $lines);
+    }
+
+    public function testLinesWithLength(): void
+    {
+        $path = $this->createTempFile('lines_len.txt', "hello\nworld\n");
+
+        $reader = TextFileManager::fromPath($path);
+        $lines = iterator_to_array($reader->lines(length: 3));
+
+        $this->assertEquals([
+            0 => "he",
+            1 => "ll",
+            2 => "o\n",
+            3 => "wo",
+            4 => "rl",
+            5 => "d\n",
+        ], $lines);
+    }
+
+    public function testLinesEmptyFile(): void
+    {
+        $path = $this->createTempFile('lines_empty.txt', '');
+
+        $reader = TextFileManager::fromPath($path);
+        $lines = iterator_to_array($reader->lines());
+
+        $this->assertEquals([], $lines);
+    }
+
+    public function testLinesWithForeach(): void
+    {
+        $path = $this->createTempFile('lines_foreach.txt', "a\nb\nc\n");
+
+        $reader = TextFileManager::fromPath($path);
+        $collected = [];
+        foreach ($reader->lines() as $index => $line) {
+            $collected[$index] = trim($line);
+        }
+
+        $this->assertEquals([0 => 'a', 1 => 'b', 2 => 'c'], $collected);
+    }
 }

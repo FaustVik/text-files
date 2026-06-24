@@ -164,6 +164,29 @@ final class TextFileManager implements IoTextInterface
     }
 
     /**
+     * @return \Generator<int, string>
+     * @throws IsNotResourceException
+     * @throws FileBaseException
+     */
+    public function lines(?int $length = null): \Generator
+    {
+        $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
+
+        try {
+            $i = 0;
+            while (($line = fgets(stream: $handle, length: $length)) !== false) {
+                if ($this->settings->isSkipEmptyLine() && $line === "\n") {
+                    continue;
+                }
+                yield $i => $line;
+                $i++;
+            }
+        } finally {
+            $this->fileOperation->closeFile(handle: $handle);
+        }
+    }
+
+    /**
      * @param FileModes $mode
      * @param callable $callback
      * @return mixed
