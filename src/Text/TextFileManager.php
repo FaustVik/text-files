@@ -12,6 +12,8 @@ use FaustVik\Files\Dictionary\FileModes;
 use FaustVik\Files\Exceptions\File\CantReadFileException;
 use FaustVik\Files\Exceptions\FileBaseException;
 use FaustVik\Files\Exceptions\IsNotResourceException;
+use FaustVik\Files\File\File;
+use FaustVik\Files\File\FileOperationWrapper;
 
 final class TextFileManager implements IoTextInterface
 {
@@ -21,6 +23,21 @@ final class TextFileManager implements IoTextInterface
         private readonly FileOperationsInterface $fileOperation,
     ) {
         $this->file->checkFile();
+    }
+
+    /**
+     * Create an instance from a file path with default settings.
+     *
+     * @param string $path Path to the text file.
+     * @param bool $skipEmptyLines Whether to skip empty lines when reading.
+     */
+    public static function fromPath(string $path, bool $skipEmptyLines = false): self
+    {
+        return new self(
+            file: new File($path),
+            settings: new TextSettingReader(isSkipEmptyLine: $skipEmptyLines),
+            fileOperation: new FileOperationWrapper(),
+        );
     }
 
     /**

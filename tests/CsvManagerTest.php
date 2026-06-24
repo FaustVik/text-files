@@ -134,4 +134,53 @@ final class CsvManagerTest extends BaseTestCase
             ['2', 'Jane', '25'],
         ], $data);
     }
+
+    public function testFromPathRead(): void
+    {
+        $path = $this->createTempFile('factory.csv', "id,name\n1,Alice\n");
+
+        $manager = CsvManager::fromPath($path);
+        $data = $manager->read();
+
+        $this->assertEquals([
+            ['id', 'name'],
+            ['1', 'Alice'],
+        ], $data);
+    }
+
+    public function testFromPathWithCustomSeparator(): void
+    {
+        $path = $this->createTempFile('factory_sep.csv', "id;name\n1;Bob\n");
+
+        $manager = CsvManager::fromPath($path, separator: ';');
+        $data = $manager->read();
+
+        $this->assertEquals([
+            ['id', 'name'],
+            ['1', 'Bob'],
+        ], $data);
+    }
+
+    public function testFromPathWithSkipHeader(): void
+    {
+        $path = $this->createTempFile('factory_header.csv', "id,name\n1,Charlie\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $data = $manager->read();
+
+        $this->assertEquals([
+            ['1', 'Charlie'],
+        ], $data);
+    }
+
+    public function testFromPathWriteAndRead(): void
+    {
+        $path = $this->createTempFile('factory_rw.csv', '');
+
+        $manager = CsvManager::fromPath($path);
+        $manager->write([['id' => 1, 'name' => 'Dave']]);
+
+        $data = $manager->read();
+        $this->assertEquals([['1', 'Dave']], $data);
+    }
 }

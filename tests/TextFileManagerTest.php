@@ -129,4 +129,46 @@ final class TextFileManagerTest extends BaseTestCase
 
         $this->assertEquals(["li"], $result);
     }
+
+    public function testFromPathReadToArray(): void
+    {
+        $path = $this->createTempFile('factory_test.txt', "hello\nworld\n");
+
+        $reader = TextFileManager::fromPath($path);
+        $result = $reader->readToArray();
+
+        $this->assertEquals(["hello\n", "world\n"], $result);
+    }
+
+    public function testFromPathWithSkipEmptyLines(): void
+    {
+        $path = $this->createTempFile('factory_skip.txt', "line1\n\nline2\n");
+
+        $reader = TextFileManager::fromPath($path, skipEmptyLines: true);
+        $result = $reader->readToArray();
+
+        $this->assertEquals(["line1\n", "line2\n"], $result);
+    }
+
+    public function testFromPathWriteAndRead(): void
+    {
+        $path = $this->createTempFile('factory_rw.txt', '');
+
+        $reader = TextFileManager::fromPath($path);
+        $reader->write("data");
+
+        $result = $reader->readToString();
+        $this->assertEquals("data", $result);
+    }
+
+    public function testFromPathOverWrite(): void
+    {
+        $path = $this->createTempFile('factory_ow.txt', 'old');
+
+        $reader = TextFileManager::fromPath($path);
+        $reader->overWrite('new');
+
+        $result = $reader->readToString();
+        $this->assertEquals("new", $result);
+    }
 }

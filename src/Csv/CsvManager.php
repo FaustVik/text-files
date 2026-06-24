@@ -12,6 +12,7 @@ use FaustVik\Files\Dictionary\FileModes;
 use FaustVik\Files\Exceptions\File\FileExtensionIsNotSupportedException;
 use FaustVik\Files\Exceptions\FileBaseException;
 use FaustVik\Files\Exceptions\IsNotResourceException;
+use FaustVik\Files\File\FileOperationWrapper;
 
 final class CsvManager implements CsvContract
 {
@@ -28,6 +29,41 @@ final class CsvManager implements CsvContract
         if (!$this->file->isCsvExtension()) {
             throw new FileExtensionIsNotSupportedException(extension: $this->file->getExtension());
         }
+    }
+
+    /**
+     * Create an instance from a file path with default settings.
+     *
+     * @param string $path Path to the CSV file.
+     * @param string $separator Column separator character (default: ',').
+     * @param bool $skipFirstLine Whether to skip the first line as header.
+     * @param bool $useAssociationForHeader Whether to use custom key associations.
+     * @param string $escapeChar Escape character (default: '\\').
+     * @param string $enclosureChar Enclosure character (default: '"').
+     */
+    public static function fromPath(
+        string $path,
+        string $separator = ',',
+        bool $skipFirstLine = false,
+        bool $useAssociationForHeader = false,
+        string $escapeChar = '\\',
+        string $enclosureChar = '"',
+    ): self {
+        $csvFile = new CsvFile($path);
+
+        $settings = new CsvSettingReader(
+            separator: $separator,
+            skipFirstLine: $skipFirstLine,
+            useAssociationForHeader: $useAssociationForHeader,
+            escapeChar: $escapeChar,
+            enclosureChar: $enclosureChar,
+        );
+
+        return new self(
+            file: $csvFile,
+            csvSettingReaderContract: $settings,
+            fileOperation: new FileOperationWrapper(),
+        );
     }
 
     /**
