@@ -7,25 +7,15 @@ namespace FaustVik\Tests\Helpers\Directory;
 use FaustVik\Files\Exceptions\DirectoryExceptionBase;
 use FaustVik\Files\Exceptions\IsNotResourceException;
 use FaustVik\Files\Helpers\Directory\DirectoryOperation;
-use PHPUnit\Framework\TestCase;
+use FaustVik\Tests\BaseTestCase;
 
-final class DirectoryOperationTest extends TestCase
+final class DirectoryOperationTest extends BaseTestCase
 {
-    /** @var string */
-    private $testDir;
+    private string $testDir;
 
     protected function setUp(): void
     {
-        // Создаем временную директорию для тестов
-        $this->testDir = __DIR__ . '/test_dir';
-        if (!file_exists($this->testDir)) {
-            mkdir($this->testDir);
-        }
-    }
-
-    protected function tearDown(): void
-    {
-        DirectoryOperation::deleteDir(path: $this->testDir);
+        $this->testDir = $this->createTempDir('dir_ops');
     }
 
     public function testCreateDir(): void
@@ -44,18 +34,16 @@ final class DirectoryOperationTest extends TestCase
 
     public function testCreateDirFailure(): void
     {
-        // Преобразуем предупреждения в исключения
         set_error_handler(static function ($errno, $errstr) {
             throw new \RuntimeException($errstr, $errno);
         }, E_WARNING);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('mkdir(): No such file or directory'); // Ожидаемое системное сообщение
+        $this->expectExceptionMessage('mkdir(): No such file or directory');
 
         try {
             DirectoryOperation::createDir(path: '/invalid/path');
         } finally {
-            // Восстанавливаем обработчик ошибок
             restore_error_handler();
         }
     }
@@ -97,7 +85,7 @@ final class DirectoryOperationTest extends TestCase
     {
         $handle = DirectoryOperation::openDir(path: $this->testDir);
         DirectoryOperation::closeDir($handle);
-        $this->assertTrue(true); // Если исключение не выброшено, тест пройден
+        $this->assertTrue(true);
     }
 
     public function testCloseDirFailure(): void

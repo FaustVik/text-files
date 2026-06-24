@@ -46,7 +46,7 @@
   },
   "scripts": {
     "cs-check": "./vendor/bin/phpcs src/",
-    "cs-fix": " ./vendor/bin/phpcbf src/",
+    "cs-fix": "./vendor/bin/phpcbf src/",
     "phpstan-check": "./vendor/bin/phpstan analyse",
     "unit-tests-run": "./vendor/bin/phpunit --bootstrap vendor/autoload.php tests"
   }

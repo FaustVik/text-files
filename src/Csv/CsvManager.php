@@ -176,7 +176,9 @@ final class CsvManager implements CsvContract
         $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
 
         try {
-            return $this->readBase(handle: $handle, length: $length);
+            $lines = $line !== null ? [$line] : [];
+
+            return $this->readBase(handle: $handle, length: $length, lines: $lines);
         } finally {
             $this->fileOperation->closeFile($handle);
         }

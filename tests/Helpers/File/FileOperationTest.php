@@ -9,28 +9,21 @@ use FaustVik\Files\Exceptions\File\FileNotFoundException;
 use FaustVik\Files\Exceptions\FileBaseException;
 use FaustVik\Files\Exceptions\IsNotResourceException;
 use FaustVik\Files\Helpers\File\FileOperation;
-use PHPUnit\Framework\TestCase;
+use FaustVik\Tests\BaseTestCase;
 
-class FileOperationTest extends TestCase
+class FileOperationTest extends BaseTestCase
 {
-    private string $testFile = __DIR__ . '/testfile.txt';
-    private string $nonExistentFile = __DIR__ . '/nonexistent.txt';
-    private string $destinationFile = __DIR__ . '/destination.txt';
+    private string $testFile;
+    private string $nonExistentFile;
+    private string $destinationFile;
 
     protected function setUp(): void
     {
-        // Создаем тестовый файл
-        \file_put_contents($this->testFile, 'Hello, world!');
-    }
+        $this->testFile = $this->createTempFile('testfile.txt', 'Hello, world!');
+        $this->nonExistentFile = $this->getTempPath('nonexistent.txt');
+        $this->destinationFile = $this->getTempPath('destination.txt');
 
-    protected function tearDown(): void
-    {
-        // Удаляем тестовые файлы после каждого теста
-        foreach ([$this->testFile, $this->destinationFile] as $file) {
-            if (\file_exists($file)) {
-                \unlink($file);
-            }
-        }
+        @unlink($this->destinationFile);
     }
 
     public function testDelete(): void
@@ -80,7 +73,6 @@ class FileOperationTest extends TestCase
 
     public function testOpenFileThrowsExceptionIfFileNotFound(): void
     {
-        // Устанавливаем обработчик ошибок, который преобразует предупреждения в исключения
         \set_error_handler(static function ($errno, $errstr) {
             throw new FileBaseException();
         });

@@ -13,6 +13,8 @@ use FaustVik\Files\Helpers\File\FileInfo;
 
 final class File implements FileContract
 {
+    use FileCheckTrait;
+
     public function __construct(
         private readonly string $path,
     ) {
@@ -31,21 +33,7 @@ final class File implements FileContract
      */
     public function checkFile(): void
     {
-        if (!FileInfo::checkFileExistence(path: $this->path)) {
-            throw new FileNotFoundException($this->path);
-        }
-
-        if (!FileInfo::isFile(path: $this->path)) {
-            throw new FileBaseException('Is not file');
-        }
-
-        if (!FileInfo::isReadable(path: $this->path)) {
-            throw new FileIsNotReadableException($this->path);
-        }
-
-        if (!FileInfo::isWritable(path: $this->path)) {
-            throw new FileIsNotWriteableException($this->path);
-        }
+        $this->validateFile();
     }
 
     public function getSize(): int
