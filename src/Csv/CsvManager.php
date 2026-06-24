@@ -371,4 +371,94 @@ final class CsvManager implements CsvContract
 
         return $this->overWrite($data);
     }
+
+    /**
+     * Process CSV in chunks of $size rows.
+     * Each chunk is passed to $callback as array<array>.
+     * Return false from callback to stop processing early.
+     *
+     * @param int<1, max> $size Number of rows per chunk.
+     * @param callable(array<array<int|string, int|string|float>>): ?bool $callback
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function chunk(int $size, callable $callback): void
+    {
+        $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
+
+        try {
+            $isWasSkippedHeader = false;
+            $chunk = [];
+
+            while (
+                ($data = fgetcsv(
+                    stream: $handle,
+                    length: 0,
+                    separator: $this->csvSettingReaderContract->getSeparator(),
+                    enclosure: $this->csvSettingReaderContract->getEnclosureChar(),
+                    escape: $this->csvSettingReaderContract->getEscapeChar(),
+                )) !== false
+            ) {
+                if (!$isWasSkippedHeader && $this->csvSettingReaderContract->isSkipFirstLine()) {
+                    $isWasSkippedHeader = true;
+                    continue;
+                }
+
+                $chunk[] = $this->replaceAssociations($data);
+
+                if (\count($chunk) === $size) {
+                    $result = $callback($chunk);
+                    if ($result === false) {
+                        return;
+                    }
+                    $chunk = [];
+                }
+            }
+
+            if ($chunk !== []) {
+                $callback($chunk);
+            }
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
+    }
+
+    /**
+     * Process CSV row by row using a generator-style callback.
+     * Return false from callback to stop processing early.
+     *
+     * @param callable(array<int|string, int|string|float>): ?bool $callback
+     * @throws FileBaseException
+     * @throws IsNotResourceException
+     */
+    public function stream(callable $callback): void
+    {
+        $handle = $this->fileOperation->openFile(path: $this->file->getPath(), mode: FileModes::ONLY_READ_BINARY);
+
+        try {
+            $isWasSkippedHeader = false;
+
+            while (
+                ($data = fgetcsv(
+                    stream: $handle,
+                    length: 0,
+                    separator: $this->csvSettingReaderContract->getSeparator(),
+                    enclosure: $this->csvSettingReaderContract->getEnclosureChar(),
+                    escape: $this->csvSettingReaderContract->getEscapeChar(),
+                )) !== false
+            ) {
+                if (!$isWasSkippedHeader && $this->csvSettingReaderContract->isSkipFirstLine()) {
+                    $isWasSkippedHeader = true;
+                    continue;
+                }
+
+                $result = $callback($this->replaceAssociations($data));
+                if ($result === false) {
+                    return;
+                }
+            }
+        } finally {
+            $this->fileOperation->closeFile($handle);
+        }
+    }
 }

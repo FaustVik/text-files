@@ -183,4 +183,101 @@ final class CsvManagerTest extends BaseTestCase
         $data = $manager->read();
         $this->assertEquals([['1', 'Dave']], $data);
     }
+
+    public function testChunk(): void
+    {
+        $path = $this->createTempFile('chunk.csv', "id,name\n1,Alice\n2,Bob\n3,Charlie\n4,Diana\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $chunks = [];
+
+        $manager->chunk(2, function (array $chunk) use (&$chunks): true {
+            $chunks[] = $chunk;
+            return true;
+        });
+
+        $this->assertCount(2, $chunks);
+        $this->assertEquals([['1', 'Alice'], ['2', 'Bob']], $chunks[0]);
+        $this->assertEquals([['3', 'Charlie'], ['4', 'Diana']], $chunks[1]);
+    }
+
+    public function testChunkWithRemainder(): void
+    {
+        $path = $this->createTempFile('chunk_remainder.csv', "id,name\n1,Alice\n2,Bob\n3,Charlie\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $chunks = [];
+
+        $manager->chunk(2, function (array $chunk) use (&$chunks): true {
+            $chunks[] = $chunk;
+            return true;
+        });
+
+        $this->assertCount(2, $chunks);
+        $this->assertCount(2, $chunks[0]);
+        $this->assertCount(1, $chunks[1]);
+    }
+
+    public function testChunkEarlyStop(): void
+    {
+        $path = $this->createTempFile('chunk_stop.csv', "id,name\n1,Alice\n2,Bob\n3,Charlie\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $chunks = [];
+
+        $manager->chunk(2, function (array $chunk) use (&$chunks): false {
+            $chunks[] = $chunk;
+            return false;
+        });
+
+        $this->assertCount(1, $chunks);
+    }
+
+    public function testChunkEmptyFile(): void
+    {
+        $path = $this->createTempFile('chunk_empty.csv', '');
+
+        $manager = CsvManager::fromPath($path);
+        $chunks = [];
+
+        $manager->chunk(10, function (array $chunk) use (&$chunks): true {
+            $chunks[] = $chunk;
+            return true;
+        });
+
+        $this->assertCount(0, $chunks);
+    }
+
+    public function testStream(): void
+    {
+        $path = $this->createTempFile('stream.csv', "id,name\n1,Alice\n2,Bob\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $rows = [];
+
+        $manager->stream(function (array $row) use (&$rows): true {
+            $rows[] = $row;
+            return true;
+        });
+
+        $this->assertEquals([
+            ['1', 'Alice'],
+            ['2', 'Bob'],
+        ], $rows);
+    }
+
+    public function testStreamEarlyStop(): void
+    {
+        $path = $this->createTempFile('stream_stop.csv', "id,name\n1,Alice\n2,Bob\n3,Charlie\n");
+
+        $manager = CsvManager::fromPath($path, skipFirstLine: true);
+        $rows = [];
+
+        $manager->stream(function (array $row) use (&$rows): false {
+            $rows[] = $row;
+            return false;
+        });
+
+        $this->assertCount(1, $rows);
+    }
 }
