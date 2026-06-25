@@ -178,7 +178,7 @@ final class CsvManager implements CsvContract
         try {
             $data = $this->readBase(handle: $handle, length: 0, lines: $lines);
 
-            return array_filter($data, static fn($key) => \in_array($key, $lines, true), ARRAY_FILTER_USE_KEY);
+            return array_filter($data, static fn ($key) => \in_array($key, $lines, true), ARRAY_FILTER_USE_KEY);
         } finally {
             $this->fileOperation->closeFile($handle);
         }
@@ -301,7 +301,7 @@ final class CsvManager implements CsvContract
             }
             if (!empty($columns)) {
                 $result[] = $this->replaceAssociations(
-                    array_map(static fn($x) => $data[$x], $columns),
+                    array_map(static fn ($x) => $data[$x], $columns),
                 );
                 ++$counter;
 

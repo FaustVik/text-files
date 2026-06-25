@@ -159,7 +159,7 @@ final class TextFileManager implements IoTextInterface
         }
 
         /** @var false|int $result */
-        $result = $this->withFileHandle(mode: $mode, callback: static fn($handle) => fwrite(stream: $handle, data: $data) !== false);
+        $result = $this->withFileHandle(mode: $mode, callback: static fn ($handle) => fwrite(stream: $handle, data: $data) !== false);
         return !($result === false);
     }
 

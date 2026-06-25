@@ -309,7 +309,7 @@ final class CsvManagerTest extends BaseTestCase
         $path = $this->createTempFile('filter.csv', "id,name,age\n1,Alice,30\n2,Bob,25\n3,Charlie,35\n");
 
         $manager = CsvManager::fromPath($path, skipFirstLine: true);
-        $result = $manager->filter(fn(array $row): bool => (int) $row[2] > 28);
+        $result = $manager->filter(fn (array $row): bool => (int) $row[2] > 28);
 
         $this->assertCount(2, $result);
         $values = array_values($result);
