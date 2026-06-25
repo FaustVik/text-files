@@ -71,7 +71,7 @@ final class CsvFileTest extends BaseTestCase
         $readOnlyFile = $this->createTempFileWithPermissions(
             'readonly_' . uniqid() . '.csv',
             "id\n1\n",
-            0444
+            0o444
         );
 
         $csvFile = new CsvFile($readOnlyFile);
@@ -93,7 +93,7 @@ final class CsvFileTest extends BaseTestCase
         $noReadFile = $this->createTempFileWithPermissions(
             'noread_' . uniqid() . '.csv',
             "id\n1\n",
-            0200
+            0o200
         );
 
         $csvFile = new CsvFile($noReadFile);

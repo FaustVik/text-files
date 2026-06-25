@@ -14,10 +14,10 @@ abstract class BaseTestCase extends TestCase
 
     public static function setUpBeforeClass(): void
     {
-        self::$testDir = dirname(__DIR__, 2) . '/.var/test/' . static::class;
+        self::$testDir = dirname(__DIR__, 2) . '/var/test/' . static::class;
 
         if (!is_dir(self::$testDir)) {
-            mkdir(self::$testDir, 0777, true);
+            mkdir(self::$testDir, 0o777, true);
         }
     }
 
@@ -47,7 +47,7 @@ abstract class BaseTestCase extends TestCase
         $path = self::$testDir . '/' . $name;
 
         if (!is_dir($path)) {
-            mkdir($path, 0777, true);
+            mkdir($path, 0o777, true);
         }
         $this->createdDirs[] = $path;
 
